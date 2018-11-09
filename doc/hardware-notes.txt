@@ -62,6 +62,8 @@ Components
     ODD03
     MYS403
 
+    Datasheet available online. Acts as a "main power switch" of the tray electronics and has a step up converter to provide 8V power supply for the blue laser diode.
+
 - Motor control chipset
 
     Texas Instruments logo
@@ -97,13 +99,26 @@ Top side:
   test points.
 
 Bottom side:
+- UART TX, 115200 bits/s (see `doc/uart_tx.jpg`), tested with firmware TS00, hardware rev.: BB
+  mostly binary data, looks like a debug output from the processor
+  Firmware version string appears in output:
+  
+  000025e0: e741 8cea 0000 000a 18e3 418d aa1c e741  .A........A....A
+  000025f0: 8e00 5453 3030 18e4 3131 2a00 1be3 2ce8  ..TS00..11*...,.
+  00002600: aa1c e30e 9eaa 1ce5 0e9f 0a00 001a e510  ................
+
+  the meaning of the other data wasn't analyzed yet
+
+  Captured data:
+    - `logs/hardware_uart.normal`: normal operation without any disc inserted
+    - `logs/hadware_uart.no_opu`: optical unit FPC detached from mainboard
 
 - Two normal test-points near the motor controllers.
 - Five vias that have been enlarged into test points. Could be motor control
   or power related.
 - Test points near PCB trace inductors under the power supply. These are
 - probably different grounds (analog, digital, shield).
-- Threee normal test-points near the SoC
+- Three normal test-points near the SoC
 - Two via test points near the SoC
 - Three via test points are especially elongated and form a row adjacent to
   the SoC thermal pad. These seem most likely to be a factory programming
@@ -162,9 +177,9 @@ Wiring Harness
 
     18       5V_a         Switched 5V power (same as 9)
 
-    19       DATA         0v during BD-R burn
-    20       DATA         3.3v during BD-R burn
-    21       DATA         0v during BD-R burn
+    19       DATA         SERIAL, SDIO 
+    20       DATA         SERIAL, CLK 
+    21       DATA         SERIAL, EN   
 
     22 - 23  DATA         High-speed (>= 40 MHz), 300 mV p-p, probably differential
                           Laser burn data? Active during BD-R burn.
@@ -174,23 +189,24 @@ Wiring Harness
     25 - 26  DATA         High-speed (>= 40 MHz), 300 mV p-p, probably differential
                           Laser burn data? Active during BD-R burn.
 
---- 27       GND          (This may represent the point where this FPC splits,
---- 28       GND           tray electronics below and pickup electronics above.)
 
     29       ANALOG?      130mV during BD-R burn
+--- 27       GND          ~(This may represent the point where this FPC splits,~
+--- 28       GND           ~tray electronics below and pickup electronics above.)~
     30       ANALOG?      670mV during BD-R burn
     31       ENABLE?      3.3v during BD-R burn, thin trace
     32       5V           Switched 5V power
+    32       8V           Switched 8V power (pin OUT1 of STODD03 power supply controller), power for blue laser diode
 
     33       5V           Switched 5V power
 
     34       ENABLE       3.3v signal, to SoC
 
-    35 - 38  COIL x4      4x, to TPIC1391, VCM fine-control
-                          ~50mV, fine tracking waveforms
+    35 - 38  COIL x4      4x, to TPIC1391                          
+                          Stepper motor for collimator lens
 
-    39 - 44  COIL x6      6x, to TPIC1356, VCM coarse-control
-                          5V, 320 kHz PWM. Probably focus?
+    39 - 44  COIL x6      6x, to TPIC1356
+                          5V, 320 kHz PWM. Focus, Tilt, Track
 
     45 - 48  COIL x4      Spindle brushless motor
                           Connected to TPIC1356
@@ -238,7 +254,15 @@ Wiring Harness
 
 - Optical module
     - Very thin and delicate 45-pin flex cable, usually hidden under
-      a metal shield. Probably no PCB involved, just flex cable origami.
+      a metal shield. ~~Probably no PCB involved, just flex cable origami.~~ The flex cable origami contains several passive components and one quadratic chip with 7x4 pins with a heatsink attached to it. (Probably the Laser Diode Driver)
+
+    - Laser Diode Driver (see `ldd_1.jpg`):
+        A2934
+          A05X
+           319
+      Google doesn't find any datasheet for this part number. However, the writing is very hard to read, so maybe just looking for the wrong thing.
+
+      Communication with the main CPU happens over a serial bus which is similar to SPI in 3 wire mode (shared MOSI and MISO line).
 
     - Components inside are obscured, haven't tried disassembling yet.
       Only internal connections visible are on one of the optical modules.
